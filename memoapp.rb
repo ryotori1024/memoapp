@@ -3,6 +3,7 @@ require 'net/http'
 require 'uri'
 require 'json'
 require 'bundler'
+require 'cgi'
 
 Bundler.require
 
@@ -62,8 +63,12 @@ post '/new_' do
   end
   max_id += 1
 
+  # 新規画面で入力したメモのタイトルと内容をサニタイジングする
+  title_sanit = CGI.escapeHTML(params[:title])
+  contents_sanit = CGI.escapeHTML(params[:contents])
+
   # 新規画面で入力したメモのタイトルと内容をハッシュに格納する
-  memo_hash["memos"].push({"id":max_id.to_s,"title":params[:title],"contents":params[:contents]})
+  memo_hash["memos"].push({"id":max_id.to_s,"title":title_sanit,"contents":contents_sanit})
 
   json_file_write(memo_hash)
 
@@ -103,11 +108,15 @@ patch '/edit_/:id' do
 
   memo_hash = json_file_open
 
+  # 編集画面で入力したメモのタイトルと内容をサニタイジングする
+  title_sanit = CGI.escapeHTML(params[:title])
+  contents_sanit = CGI.escapeHTML(params[:contents])
+
   memo_hash["memos"].each do |memo|
     if memo["id"] == id
       # URLから取得したIDとハッシュのIDが等しければ、編集したタイトルと内容をハッシュに格納
-      memo["title"] = title
-      memo["contents"] = contents
+      memo["title"] = title_sanit
+      memo["contents"] = contents_sanit
       break
     end
   end
