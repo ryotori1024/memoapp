@@ -9,9 +9,7 @@ Bundler.require
 memo_hash = {}
 
 get '/memos/top' do
-  File.open("memos.json") do |j|
-    memo_hash = JSON.load(j)
-  end
+  memo_hash = json_file_open
 
   @t = ""
   if memo_hash["memos"].length == 0
@@ -33,9 +31,7 @@ get '/memos/:id/show' do
   id = params[:id]
   memo_index = id.to_i - 1
 
-  File.open("memos.json") do |j|
-    memo_hash = JSON.load(j)
-  end
+  memo_hash = json_file_open
 
   @t = ""
   @t = @t + "<h2>#{memo_hash["memos"][memo_index]["title"]}</h2>"
@@ -55,10 +51,7 @@ get '/new' do
 end
 
 post '/new_' do
-  # JSONファイルに格納されているメモデータを全て取得しハッシュに格納
-  File.open('memos.json') do |j|
-    memo_hash = JSON.load(j)
-  end
+  memo_hash = json_file_open
 
   max_id = 0
   memo_hash["memos"].each do |memo|
@@ -71,19 +64,15 @@ post '/new_' do
   # 新規画面で入力したメモのタイトルと内容をハッシュに格納する
   memo_hash["memos"].push({"id":max_id.to_s,"title":params[:title],"contents":params[:contents]})
 
-  # JSONファイルを開いてハッシュの内容を上書き
-  File.open("memos.json", "w") do |file|
-    JSON.dump(memo_hash, file)
-  end
+  json_file_write(memo_hash)
+
   redirect '/memos/top'
 end
 
 get '/memos/:id/edit' do
   id = params[:id]
 
-  File.open("memos.json") do |j|
-    memo_hash = JSON.load(j)
-  end
+  memo_hash = json_file_open
 
   @t = ""
   i = 0
@@ -113,9 +102,7 @@ patch '/edit_/:id' do
   title = params[:title]
   contents = params[:contents]
 
-  File.open("memos.json") do |j|
-    memo_hash = JSON.load(j)
-  end
+  memo_hash = json_file_open
 
   i = 0
   memo_hash["memos"].length.times do
@@ -128,10 +115,7 @@ patch '/edit_/:id' do
     i += 1
   end
 
-  # JSONファイルを開いてハッシュの内容を上書き
-  File.open("memos.json", "w") do |file|
-    JSON.dump(memo_hash, file)
-  end
+  json_file_write(memo_hash)
 
   redirect '/memos/' + id + '/show'
 end
@@ -142,9 +126,7 @@ delete '/memos/:id/del' do
   id = params[:id].to_i
   memo_index = id - 1
 
-  File.open("memos.json") do |j|
-    memo_hash = JSON.load(j)
-  end
+  memo_hash = json_file_open
 
   # 削除したメモデータから数えていくつ分のメモデータのIDを更新するかを求める
   times = memo_hash["memos"].length - memo_index - 1
@@ -167,4 +149,19 @@ delete '/memos/:id/del' do
   end
 
   redirect '/memos/top'
+end
+
+# メモデータが格納されているJSONファイルを開き、ハッシュに格納するメソッド
+def json_file_open
+  rt_hash = {}
+  File.open("memos.json") do |j|
+    rt_hash = JSON.load(j)
+  end
+end
+
+# メモデータのハッシュを受け取り、JSONファイルに上書きするメソッド
+def json_file_write(arg_hash)
+  File.open("memos.json", "w") do |file|
+    JSON.dump(arg_hash, file)
+  end
 end
