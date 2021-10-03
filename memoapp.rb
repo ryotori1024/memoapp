@@ -11,16 +11,16 @@ memo_hash = {}
 get '/memos/top' do
   memo_hash = json_file_open
 
+  # ハッシュに格納されたメモデータのリンクを表示
   @t = ""
   if memo_hash["memos"].length == 0
     @t = "<p>メモがありません</p>"
   else
-    i = 0
-    memo_hash["memos"].length.times do
-      @t = @t + "<a href=\"/memos/#{memo_hash["memos"][i]["id"]}/show\"><p>#{memo_hash["memos"][i]["title"]}</p><br>"
-      i += 1
+    memo_hash["memos"].each do |memo|
+      @t = @t + "<a href=\"/memos/#{memo["id"]}/show\"><p>#{memo["title"]}</p><br>"
     end
   end
+
   @t = @t + "<a href=\"/new\">追加</a>"
   erb :top
 end
@@ -61,6 +61,7 @@ post '/new_' do
     end
   end
   max_id += 1
+
   # 新規画面で入力したメモのタイトルと内容をハッシュに格納する
   memo_hash["memos"].push({"id":max_id.to_s,"title":params[:title],"contents":params[:contents]})
 
@@ -75,22 +76,20 @@ get '/memos/:id/edit' do
   memo_hash = json_file_open
 
   @t = ""
-  i = 0
-  memo_hash["memos"].length.times do
-    if memo_hash["memos"][i]["id"] == id
+  memo_hash["memos"].each do |memo|
+    if memo["id"] == id
       # URLに含まれているメモIDと一致するIDをハッシュから探し出し、編集画面のタイトルと内容のテキストに表示する
       @t = @t + "<form action=\"/edit_/#{id}\" method=\"post\">"
       @t = @t + "<input id=\"hidden\" type=\"hidden\" name=\"_method\" value=\"patch\">"
       @t = @t + "<h2>タイトル</h2><br>"
-      @t = @t + "<input type=\"text\" size=\"30\" maxlength=\"20\" value=\"#{memo_hash["memos"][i]["title"]}\" name=\"title\"><br>"
+      @t = @t + "<input type=\"text\" size=\"30\" maxlength=\"20\" value=\"#{memo["title"]}\" name=\"title\"><br>"
       @t = @t + "<h3>内容</h3><br>"
-      @t = @t + "<textarea cols=\"40\" rows=\"20\" maxlength=\"100\" name=\"contents\">#{memo_hash["memos"][i]["contents"]}</textarea><br>"
+      @t = @t + "<textarea cols=\"40\" rows=\"20\" maxlength=\"100\" name=\"contents\">#{memo["contents"]}</textarea><br>"
       @t = @t + "<input type=\"submit\" value=\"保存\">"
       @t = @t + "</form>"
       @t = @t + "<a href=\"/memos/#{id}/show\">キャンセル</a>"
       break
     end
-    i += 1
   end
 
   erb :edit
@@ -104,15 +103,13 @@ patch '/edit_/:id' do
 
   memo_hash = json_file_open
 
-  i = 0
-  memo_hash["memos"].length.times do
-    if i == (id.to_i - 1)
-      # 配列のインデックスとメモID-1の値が等しければ、編集したタイトルと内容をハッシュに格納
-      memo_hash["memos"][i]["title"] = title
-      memo_hash["memos"][i]["contents"] = contents
+  memo_hash["memos"].each do |memo|
+    if memo["id"] == id
+      # URLから取得したIDとハッシュのIDが等しければ、編集したタイトルと内容をハッシュに格納
+      memo["title"] = title
+      memo["contents"] = contents
       break
     end
-    i += 1
   end
 
   json_file_write(memo_hash)
@@ -135,7 +132,6 @@ delete '/memos/:id/del' do
 
   # メモデータを削除した場合に、IDが中抜けになり整合が取れなくなるのを防ぐために
   # 削除したメモ以降のデータのIDを-1する
-  i = 0
   if times != 0
     # timesが0(一番後ろのメモデータを削除)の場合は行わない
     times.times do
